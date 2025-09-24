@@ -1,6 +1,8 @@
 # Where's Waldo Finder
 
-AI-powered Where's Waldo finder using image segmentation and Anthropic's Claude vision model.
+AI-powered Where's Waldo finder using image segmentation and Anthropic's Claude vision Multimodal model.
+
+<img width="987" height="690" alt="image" src="https://github.com/user-attachments/assets/ccfa8710-fcdb-4a98-a962-708c3cdcd269" />
 
 ## Features
 
