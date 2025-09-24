@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection Finder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Object Detection Finder</h1>
+            <p>Upload an image and let AI detect specific objects for you!</p>
+        </header>
+
+        <div class="upload-section">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17,8 12,3 7,8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <h3>Drag & Drop your image here</h3>
+                        <p>or <span class="browse-text">browse files</span></p>
+                        <p class="file-types">Supports: JPG, JPEG, PNG, GIF</p>
+                    </div>
+                    <input type="file" id="imageInput" name="image" accept="image/*" required>
+                </div>
+                <button type="submit" id="findWaldoBtn" disabled>Find Objects!</button>
+            </form>
+        </div>
+
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">Processing image...</p>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Results</h2>
+            <div class="results-summary" id="resultsSummary"></div>
+            <div class="image-container" id="imageContainer">
+                <h3>Analysis with Heatmap and Grid Numbers</h3>
+                <canvas id="resultCanvas"></canvas>
+
+                <h3 style="margin-top: 30px;">Original Image for Reference</h3>
+                <img id="originalImage" style="max-width: 800px; width: 100%; height: auto; border: 2px solid #ddd; border-radius: 8px;" />
+            </div>
+            <div class="detections-list" id="detectionsList"></div>
+        </div>
+
+        <div class="error-section" id="errorSection" style="display: none;">
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.2.8.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
