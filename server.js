@@ -115,13 +115,83 @@ async function processImageWithRealTimeUpdates(imagePath, channel) {
     console.log(`Analyzing ${segments.length} segments for objects...`);
     const results = await findWaldoInSegments(segments, channel);
 
-    // Publish final results (non-blocking)
-    pubNubClient.publishFinalResults(channel, {
-      success: true,
-      segmentsAnalyzed: segments.length,
-      objectDetections: results.filter(r => r.found),
-      allResults: results
-    }).catch(e => console.error('Failed to publish final results:', e.message));
+    // Publish bundled final results (20 results per bundle)
+    console.log('Publishing final results in bundles of 20...');
+    const allResults = results.filter(r => r && r.detection); // Filter valid results
+    const BUNDLE_SIZE = 20;
+
+    // Split results into bundles of 20
+    const bundles = [];
+    for (let i = 0; i < allResults.length; i += BUNDLE_SIZE) {
+      const bundle = allResults.slice(i, i + BUNDLE_SIZE);
+      bundles.push(bundle);
+    }
+
+    for (let bundleIndex = 0; bundleIndex < bundles.length; bundleIndex++) {
+      const bundle = bundles[bundleIndex];
+
+      try {
+        // Create array of segment data for this bundle
+        const bundledSegmentData = bundle.map(result => {
+          const resultIndex = results.indexOf(result); // Get original index
+          return {
+            segmentIndex: resultIndex,
+            totalSegments: segments.length,
+            found: result.found,
+            segment: {
+              x1: result.segment.x1,
+              y1: result.segment.y1,
+              x2: result.segment.x2,
+              y2: result.segment.y2,
+              width: result.segment.width,
+              height: result.segment.height
+            },
+            detection: {
+              x1: result.detection.x1,
+              y1: result.detection.y1,
+              x2: result.detection.x2,
+              y2: result.detection.y2,
+              probability: result.detection.probability,
+              reasoning: result.detection.reasoning
+            }
+          };
+        });
+
+        await pubNubClient.publishFinalResults(channel, {
+          type: 'bundled_results',
+          success: true,
+          bundleIndex: bundleIndex,
+          totalBundles: bundles.length,
+          totalResults: results.length,
+          segmentDataArray: bundledSegmentData // Array of 20 results
+        });
+
+        console.log(`✅ Published bundle ${bundleIndex + 1}/${bundles.length} (${bundle.length} results)`);
+
+        // 5ms delay between each bundle
+        if (bundleIndex < bundles.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+
+      } catch (publishError) {
+        console.error(`Failed to publish bundle ${bundleIndex + 1}:`, publishError.message);
+      }
+    }
+
+    // Send final completion message (without bulk data)
+    try {
+      const foundCount = results.filter(r => r.found).length;
+      await pubNubClient.publishFinalResults(channel, {
+        type: 'processing_complete',
+        success: true,
+        segmentsAnalyzed: segments.length,
+        foundDetections: foundCount, // Just the count, not the actual data
+        totalResults: allResults.length
+      });
+      console.log('✅ Published processing complete message');
+    } catch (e) {
+      console.error('Failed to publish completion message:', e.message);
+    }
 
     // Clean up uploaded file
     const fs = require('fs');

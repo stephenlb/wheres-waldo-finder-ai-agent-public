@@ -22,6 +22,13 @@ class PubNubClient {
   // Publish a message to a channel with error handling
   async publish(channel, message) {
     try {
+      // Calculate message size in KB
+      const messageString = JSON.stringify(message);
+      const messageSizeBytes = new TextEncoder().encode(messageString).length;
+      const messageSizeKB = (messageSizeBytes / 1024).toFixed(2);
+
+      console.log(`📦 Publishing message size: ${messageSizeKB} KB to channel ${channel} (${message.type || 'message'})`);
+
       const result = await Promise.race([
         this.pubnub.publish({
           channel: channel,

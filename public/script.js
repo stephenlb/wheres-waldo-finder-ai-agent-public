@@ -102,10 +102,107 @@ class WaldoFinder {
     }
 
     handleFinalResults(data) {
+        // Handle different types of final results messages
+        if (data.type === 'individual_result') {
+            // Add individual result to our collection
+            this.handleIndividualFinalResult(data);
+        } else if (data.type === 'bundled_results') {
+            // Handle bundled results (array of results)
+            this.handleBundledResults(data);
+        } else if (data.type === 'processing_complete') {
+            // Processing is complete
+            this.handleProcessingComplete(data);
+        } else {
+            // Legacy format - handle as before
+            this.updateProgress(100, 'Complete!');
+            setTimeout(() => {
+                this.hideProgress();
+                this.showResults(data);
+                this.unsubscribeFromChannel();
+                this.isRealTimeMode = false;
+            }, 500);
+        }
+    }
+
+    handleIndividualFinalResult(data) {
+        // Update the real-time canvas with the individual result
+        if (data.segmentData) {
+            // Check if we already have this segment from real-time updates
+            const existingIndex = this.processedSegments.findIndex(s => s.segmentIndex === data.segmentData.segmentIndex);
+
+            if (existingIndex >= 0) {
+                // Update existing segment data
+                this.processedSegments[existingIndex] = data.segmentData;
+            } else {
+                // Add new segment data
+                this.processedSegments.push(data.segmentData);
+            }
+
+            // Redraw canvas with updated data
+            this.updateRealtimeCanvas(data.segmentData);
+        }
+
+        // Update progress
+        const progressPercent = this.totalSegments > 0 ?
+            90 + (data.resultIndex / data.totalResults) * 10 :
+            90;
+
+        this.updateProgress(
+            Math.min(progressPercent, 95),
+            `Finalizing result ${data.resultIndex + 1} of ${data.totalResults}...`
+        );
+    }
+
+    handleBundledResults(data) {
+        // Process array of results from bundled message
+        if (data.segmentDataArray && Array.isArray(data.segmentDataArray)) {
+            data.segmentDataArray.forEach(segmentData => {
+                // Check if we already have this segment from real-time updates
+                const existingIndex = this.processedSegments.findIndex(s => s.segmentIndex === segmentData.segmentIndex);
+
+                if (existingIndex >= 0) {
+                    // Update existing segment data
+                    this.processedSegments[existingIndex] = segmentData;
+                } else {
+                    // Add new segment data
+                    this.processedSegments.push(segmentData);
+                }
+
+                // Update canvas for each result in the bundle
+                this.updateRealtimeCanvas(segmentData);
+            });
+        }
+
+        // Update progress
+        const progressPercent = this.totalSegments > 0 ?
+            90 + ((data.bundleIndex + 1) / data.totalBundles) * 10 :
+            90;
+
+        this.updateProgress(
+            Math.min(progressPercent, 95),
+            `Finalizing bundle ${data.bundleIndex + 1} of ${data.totalBundles} (${data.segmentDataArray?.length || 0} results)...`
+        );
+    }
+
+    handleProcessingComplete(data) {
         this.updateProgress(100, 'Complete!');
+
+        // Create a results object using the collected individual results
+        const foundResults = this.processedSegments.filter(segment => segment.found);
+        const legacyResultsFormat = {
+            success: true,
+            segmentsAnalyzed: data.segmentsAnalyzed,
+            objectDetections: foundResults, // Use our collected found results
+            allResults: this.processedSegments.map((segment, index) => ({
+                segment: segment.segment,
+                found: segment.found,
+                detection: segment.detection
+            }))
+        };
+
         setTimeout(() => {
             this.hideProgress();
-            this.showResults(data);
+            this.showResults(legacyResultsFormat);
             this.unsubscribeFromChannel();
             this.isRealTimeMode = false;
         }, 500);

@@ -186,8 +186,8 @@ async function findWaldoInSegments(segments, channel = null) {
 
     // Small delay between batches to avoid overwhelming the API
     if (batchIndex < batches.length - 1) {
-      console.log('Waiting 500ms before next batch...');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Waiting 5ms before next batch...');
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
   }
 
